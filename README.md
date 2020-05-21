@@ -1,3 +1,10 @@
+Modifications to dbamman/book-nlp
+=======
+
+This is BookNLP modified to just do quote attribution from an input of coreferenced characters.
+
+Input: A token file with characters labeled at the tokens.
+
 BookNLP
 =======
 
