@@ -246,6 +246,7 @@ public class SyntaxAnnotator {
 			if (!stateLess) {
 				Properties props = new Properties();
 				props.put("annotators", "tokenize, ssplit, pos, lemma, ner");
+				props.setProperty("tokenize.whitespace", "true"); // tokenize on whitespace
 
 				pipeline = new StanfordCoreNLP(props);
 
