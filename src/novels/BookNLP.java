@@ -35,18 +35,45 @@ public class BookNLP {
 	 * 
 	 * @param book
 	 */
-	public void process(Book book, File outputDirectory, String outputPrefix) {
+	public void process(Book book, File outputDirectory, String outputPrefix, boolean onlyQuotes) {
 		File charFile = new File(outputDirectory, outputPrefix + ".book");
-
-		process(book);
+		
+		if (onlyQuotes) {
+			readOutputTokens(book);
+		} else {
+			process(book);
+		}
 
 		QuotationAnnotator quoteFinder = new QuotationAnnotator();
-		quoteFinder.findQuotations(book);
-
+			quoteFinder.findQuotations(book);	
+			
 		CharacterFeatureAnnotator featureAnno = new CharacterFeatureAnnotator();
-		featureAnno.annotatePaths(book);
+		featureAnno.annotatePaths(book, onlyQuotes);
 		PrintUtil.printBookJson(book, charFile);
 
+	}
+	
+	/*
+	 * Create data structures given character coreference already occurred,
+	 * reading in from an output tokens file
+	 */
+	public void readOutputTokens(Book book) {
+		SyntaxAnnotator.setDependents(book);
+
+		Dictionaries dicts = new Dictionaries();
+		dicts.readAnimate(animacyFile, genderFile, maleFile, femaleFile);
+		dicts.processHonorifics(book.tokens);
+
+		CharacterAnnotator charFinder = new CharacterAnnotator();
+		charFinder.readCharacters(book, dicts);
+//		charFinder.findCharactersFromOutput(book, dicts);
+//		charFinder.resolveCharactersFromOutput(book, dicts);
+
+		PhraseAnnotator phraseFinder = new PhraseAnnotator();
+		phraseFinder.getPhrases(book, dicts);
+
+		CoreferenceAnnotator coref = new CoreferenceAnnotator();
+		coref.resolvePronouns(book); // doesn't save the characterIds with entities, may be an issue
 	}
 
 	public void process(Book book) {
@@ -57,7 +84,6 @@ public class BookNLP {
 		dicts.processHonorifics(book.tokens);
 
 		CharacterAnnotator charFinder = new CharacterAnnotator();
-
 		charFinder.findCharacters(book, dicts);
 		charFinder.resolveCharacters(book, dicts);
 
@@ -94,6 +120,7 @@ public class BookNLP {
 		options.addOption("p", true, "output directory");
 		options.addOption("id", true, "book ID");
 		options.addOption("d", false, "dump pronoun and quotes for annotation");
+		options.addOption("onlyQuotes", false, "only run quote annotation");
 
 		CommandLine cmd = null;
 		try {
@@ -172,7 +199,12 @@ public class BookNLP {
 		}
 
 		book.id = prefix;
-		bookNLP.process(book, directory, prefix);
+		
+		if (cmd.hasOption("onlyQuotes")) {
+			bookNLP.process(book, directory, prefix, true);
+		} else {
+			bookNLP.process(book, directory, prefix, false);
+		}
 
 		if (cmd.hasOption("printHTML")) {
 			File htmlOutfile = new File(directory, prefix + ".html");
@@ -185,7 +217,9 @@ public class BookNLP {
 		}
 
 		// Print out tokens
-		PrintUtil.printTokens(book, tokenFileString);
+		if (!cmd.hasOption("onlyQuotes")) {
+			PrintUtil.printTokens(book, tokenFileString);
+		}
 
 	}
 }

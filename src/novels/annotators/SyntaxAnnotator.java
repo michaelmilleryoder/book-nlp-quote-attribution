@@ -191,6 +191,7 @@ public class SyntaxAnnotator {
 			BufferedReader in1 = new BufferedReader(new InputStreamReader(
 					new FileInputStream(infile), "UTF-8"));
 			String str1;
+			in1.readLine(); // skip first header line
 
 			while ((str1 = in1.readLine()) != null) {
 				Token token = new Token(str1.trim());

@@ -273,6 +273,7 @@ public class QuotationAnnotator {
 		for (Quotation quote : quotations.values()) {
 			book.quotations.add(quote);
 		}
+//		System.out.println("break");
 
 	}
 

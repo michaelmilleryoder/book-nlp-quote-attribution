@@ -145,6 +145,256 @@ public class CharacterAnnotator {
 	}
 
 	/*
+	 * Find all characters in a book from reading in output tokens
+	 */
+	public void findCharactersFromOutput(Book book, Dictionaries dicts) {
+
+		index = Maps.newHashMap();
+		int i = 0;
+		HashSet<String> characterHash = Sets.newHashSet();
+		HashMap<String, Integer> counts = Maps.newHashMap();
+//		HashSet<BookCharacter> finalNames = Sets.newHashSet();
+		HashSet<Integer> characterIds = Sets.newHashSet();
+		HashMap<Integer, BookCharacter> characterMap = Maps.newHashMap();
+
+		int start = 0;
+		int end = 0;
+		while (i < book.tokens.size()) {
+			Token token = book.tokens.get(i);
+			start = i;
+			end = i;
+			if (token.characterId > -1) {
+
+				String mwe = "";
+				mwe += token.word + " ";
+
+				for (int j = i + 1; j < book.tokens.size(); j++) {
+					Token next=book.tokens.get(j);
+					if (next.p == token.p && next.characterId == token.characterId) {
+						mwe += book.tokens.get(j).word + " ";
+						i = j;
+						end = j;
+					} else {
+						break;
+					}
+				}
+
+				CharacterToken charToken = new CharacterToken(token.characterId,
+						start, end);
+
+				String name = mwe.trim().toLowerCase();
+//				String name = mwe.trim();
+				//System.out.println(name + " " + i);
+				characterHash.add(name);
+				int count = 0;
+				if (counts.containsKey(name)) {
+					count = counts.get(name);
+				}
+				count++;
+				counts.put(name, count);
+				
+				// Save character ID and name
+				if (characterMap.containsKey(token.characterId)) {
+					BookCharacter character = characterMap.get(token.characterId);
+					if (!name.toLowerCase().equals("he") && !name.toLowerCase().equals("him") && 
+							!name.toLowerCase().equals("his") && !name.toLowerCase().equals("she") 
+							&& !name.toLowerCase().equals("her")) {
+							character.add(name);
+					}
+				} else { // haven't seen that character before
+					Integer characterId = new Integer(token.characterId);
+					characterMap.put(characterId, new BookCharacter(name, token.characterId));
+					characterIds.add(characterId);
+				}
+//				finalNames.add(character);
+			}
+			i++;
+		}
+
+		book.characters = new BookCharacter[characterIds.size()];
+		for (HashMap.Entry<Integer, BookCharacter> entry : characterMap.entrySet()) {
+			book.characters[entry.getKey()] = entry.getValue();
+		}
+
+		// build index
+		// find all possible variants of a name (Mr. Joe Gargery -> Joe,
+		// Gargery, Joe Gargery, Mr. Gargery, Mr. Joe), which restores subsets.
+		// This means "Tom" will never show up as a character of its own if
+		// another "Tom X" exists elsewhere.
+		for (BookCharacter character : book.characters) {
+
+			String name = character.name;
+			HashSet<String> variants = getVariants(name, dicts);
+			for (String v : variants) {
+
+				HashSet<Integer> vi = null;
+				if (index.containsKey(v)) {
+					vi = index.get(v);
+				} else {
+					vi = Sets.newHashSet();
+				}
+				vi.add(character.id);
+				index.put(v, vi);
+			}
+
+		}
+
+	}
+
+	/*
+	 * Save token to character mapping in book.tokenToCharacter
+	 */
+	public void resolveCharactersFromOutput(Book book, Dictionaries dicts) {
+		int i = 0;
+
+		book.tokenToCharacter = Maps.newTreeMap();
+
+		int start = 0;
+		int end = 0;
+		while (i < book.tokens.size()) {
+			Token token = book.tokens.get(i);
+			start = i;
+			end = i;
+			if (token.characterId > -1) {
+
+				String mwe = "";
+				mwe += token.word + " ";
+
+				for (int j = i + 1; j < book.tokens.size(); j++) {
+					Token next=book.tokens.get(j);
+					if (next.p == token.p && next.characterId == token.characterId) {
+						mwe += book.tokens.get(j).word + " ";
+						i = j;
+						end = j;
+					} else {
+						break;
+					}
+				}
+
+				String name = mwe.trim();
+
+				if (index.containsKey(name.toLowerCase())) {
+
+					CharacterToken charToken = new CharacterToken(token.characterId,
+							start, end);
+
+					// mark the whole span in the book as denoting that
+					// character
+					for (int k = start; k <= end; k++) {
+						book.tokenToCharacter.put(k, charToken);
+					}
+				}
+				}
+			i++;
+			}
+		}
+
+	
+	/*
+	 * Read in characters from Tokens with given characterIds (from gold
+	 * annotations, for example).
+	 * Builds book.characters
+	 */
+	public void readCharacters(Book book, Dictionaries dicts) {
+		int i = 0;
+		index = Maps.newHashMap();
+		HashSet<String> characterHash = Sets.newHashSet();
+		HashMap<String, Integer> counts = Maps.newHashMap();
+//		HashSet<BookCharacter> finalNames = Sets.newHashSet();
+		HashSet<Integer> characterIds = Sets.newHashSet();
+		HashMap<Integer, BookCharacter> characterMap = Maps.newHashMap();
+		book.tokenToCharacter = Maps.newTreeMap();
+
+		int start = 0;
+		int end = 0;
+		while (i < book.tokens.size()) {
+			Token token = book.tokens.get(i);
+			start = i;
+			end = i;
+			if (token.characterId > -1) {
+
+				String mwe = "";
+				mwe += token.word + " ";
+
+				for (int j = i + 1; j < book.tokens.size(); j++) {
+					Token next=book.tokens.get(j);
+					if (next.p == token.p && next.characterId == token.characterId) {
+						mwe += book.tokens.get(j).word + " ";
+						i = j;
+						end = j;
+					} else {
+						break;
+					}
+				}
+
+				CharacterToken charToken = new CharacterToken(token.characterId,
+						start, end);
+
+				// mark the whole span in the book as denoting that
+				// character
+				for (int k = start; k <= end; k++) {
+					book.tokenToCharacter.put(k, charToken);
+				}
+
+//				String name = mwe.trim().toLowerCase();
+				String name = mwe.trim();
+				//System.out.println(name + " " + i);
+				characterHash.add(name);
+				int count = 0;
+				if (counts.containsKey(name)) {
+					count = counts.get(name);
+				}
+				count++;
+				counts.put(name, count);
+				
+				// Save character ID and name
+				if (characterMap.containsKey(token.characterId)) {
+					BookCharacter character = characterMap.get(token.characterId);
+					if (!name.toLowerCase().equals("he") && !name.toLowerCase().equals("him") && 
+							!name.toLowerCase().equals("his") && !name.toLowerCase().equals("she") 
+							&& !name.toLowerCase().equals("her")) {
+							character.add(name);
+					}
+				} else { // haven't seen that character before
+					Integer characterId = new Integer(token.characterId);
+					characterMap.put(characterId, new BookCharacter(name, token.characterId));
+					characterIds.add(characterId);
+				}
+//				finalNames.add(character);
+			}
+			i++;
+		}
+
+		book.characters = new BookCharacter[characterIds.size()];
+		for (HashMap.Entry<Integer, BookCharacter> entry : characterMap.entrySet()) {
+			book.characters[entry.getKey()] = entry.getValue();
+		}
+
+		// find all possible variants of a name (Mr. Joe Gargery -> Joe,
+		// Gargery, Joe Gargery, Mr. Gargery, Mr. Joe), which restores subsets.
+		// This means "Tom" will never show up as a character of its own if
+		// another "Tom X" exists elsewhere.
+		for (BookCharacter character : book.characters) {
+
+			String name = character.name;
+			HashSet<String> variants = getVariants(name, dicts);
+			for (String v : variants) {
+
+				HashSet<Integer> vi = null;
+				if (index.containsKey(v)) {
+					vi = index.get(v);
+				} else {
+					vi = Sets.newHashSet();
+				}
+				vi.add(character.id);
+				index.put(v, vi);
+			}
+
+		}
+//		book.animateEntities.putAll(book.tokenToCharacter);
+	}
+
+	/*
 	 * Find all variants of a given name. E.g., Mr. Tom Sawyer -> Mr. Sawyer Tom
 	 * Sawyer Sawyer Tom Mr. Tom. Should work nicknames in here.
 	 */

@@ -49,7 +49,7 @@ public class BatchBookNLP {
 		quoteFinder.findQuotations(book);
 
 		CharacterFeatureAnnotator featureAnno = new CharacterFeatureAnnotator();
-		featureAnno.annotatePaths(book);
+		featureAnno.annotatePaths(book, false);
 		PrintUtil.printBookJson(book, charFile);
 
 	}
