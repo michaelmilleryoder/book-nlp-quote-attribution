@@ -246,7 +246,10 @@ public class SyntaxAnnotator {
 			if (!stateLess) {
 				Properties props = new Properties();
 				props.put("annotators", "tokenize, ssplit, pos, lemma, ner");
+//				props.setProperty("tokenize.language", "Whitespace"); // tokenize on whitespace
+				props.setProperty("tokenize.options", "invertible=true,tokenizeNLs=true"); // tokenize on whitespace
 				props.setProperty("tokenize.whitespace", "true"); // tokenize on whitespace
+				props.setProperty("tokenize.keepeol", "true"); // keep eol token, for whitespace
 
 				pipeline = new StanfordCoreNLP(props);
 
@@ -293,8 +296,13 @@ public class SyntaxAnnotator {
 		count++;
 
 		ArrayList<Token> allWords = new ArrayList<Token>();
+		
+		// Replace double newlines with paragraph markers since whitespace tokenizer removes \n
+		String paragraphMarker = "<BLANK_PARAGRAPH_MARKER>";
+		String paragraphMarkerSentence = " " + paragraphMarker + " ";
+		String newDoc = doc.replace("\n\n", paragraphMarkerSentence);
 
-		Annotation document = new Annotation(doc);
+		Annotation document = new Annotation(newDoc);
 
 		System.err.println("Tagging and parsing...");
 		pipeline.annotate(document);
@@ -319,9 +327,13 @@ public class SyntaxAnnotator {
 			}
 
 			ArrayList<Token> annos = new ArrayList<Token>();
+			List<CoreLabel> tokens = sentence.get(TokensAnnotation.class);
 
-			for (CoreLabel token : sentence.get(TokensAnnotation.class)) {
+			// Check for paragraph marker
+//			boolean sentenceParagraphBreak = false;
 
+			for (CoreLabel token : tokens) {
+				
 				String word = token.get(TextAnnotation.class);
 				String pos = token.get(PartOfSpeechAnnotation.class);
 				String lemma = token.get(LemmaAnnotation.class);
@@ -330,6 +342,11 @@ public class SyntaxAnnotator {
 				int endOffset = token.endPosition();
 				String whitespaceAfter = token.after();
 				String original = token.originalText();
+
+				if (word.equals(paragraphMarker)) {
+					p++;
+					continue;
+				}
 
 				Token anno = new Token();
 				anno.original = original;
@@ -355,7 +372,10 @@ public class SyntaxAnnotator {
 				}
 			}
 
-			sentenceannos.add(annos);
+//			if (!sentenceParagraphBreak) {
+				sentenceannos.add(annos);
+//				sentenceParagraphBreak = true;
+//			}
 		}
 
 		// fix sentence mistakes (like: "Yes!" he said).

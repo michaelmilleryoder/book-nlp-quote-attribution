@@ -5,3 +5,4 @@ build/
 data/output
 data/tokens
 lib/stanford-corenlp-3.8.0-models.jar
+files/malt/parser.log
