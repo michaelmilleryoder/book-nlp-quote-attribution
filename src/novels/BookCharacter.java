@@ -50,6 +50,7 @@ public class BookCharacter {
 		JSONArray names = new JSONArray();
 
 		ArrayList<Object> sorted = Util.sortHashMapByValue(nameCounts);
+		int n_names = sorted.size();
 		int nc = 0;
 		for (Object o : sorted) {
 			String name = (String) o;

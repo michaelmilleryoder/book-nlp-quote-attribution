@@ -45,7 +45,7 @@ public class BookNLP {
 		}
 
 		QuotationAnnotator quoteFinder = new QuotationAnnotator();
-			quoteFinder.findQuotations(book);	
+		quoteFinder.findQuotations(book);	
 			
 		CharacterFeatureAnnotator featureAnno = new CharacterFeatureAnnotator();
 		featureAnno.annotatePaths(book, onlyQuotes);
@@ -73,7 +73,7 @@ public class BookNLP {
 		phraseFinder.getPhrases(book, dicts);
 
 		CoreferenceAnnotator coref = new CoreferenceAnnotator();
-		coref.resolvePronouns(book); // doesn't save the characterIds with entities, may be an issue
+		coref.resolvePronouns(book);
 	}
 
 	public void process(Book book) {

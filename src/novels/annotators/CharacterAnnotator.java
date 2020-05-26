@@ -352,12 +352,15 @@ public class CharacterAnnotator {
 					BookCharacter character = characterMap.get(token.characterId);
 					if (!name.toLowerCase().equals("he") && !name.toLowerCase().equals("him") && 
 							!name.toLowerCase().equals("his") && !name.toLowerCase().equals("she") 
-							&& !name.toLowerCase().equals("her")) {
+							&& !name.toLowerCase().equals("her") && !name.toLowerCase().contentEquals("you")
+							&& !name.toLowerCase().equals("i")) {
 							character.add(name);
 					}
 				} else { // haven't seen that character before
 					Integer characterId = new Integer(token.characterId);
-					characterMap.put(characterId, new BookCharacter(name, token.characterId));
+					BookCharacter character = new BookCharacter(name, token.characterId);
+					characterMap.put(characterId, character);
+					character.add(name);
 					characterIds.add(characterId);
 				}
 //				finalNames.add(character);
